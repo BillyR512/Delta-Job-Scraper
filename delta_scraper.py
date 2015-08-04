@@ -23,11 +23,11 @@ def parse_args(argv):
         argv, "s:p:r:", ["sender=", "receiver=", "password="])
     for opt, arg in opts:
         if opt in ("-s", "--sender"):
-            sender = opt
+            sender = arg
         if opt in ("-p", "--password"):
-            password = opt
+            password = arg
         if opt in ('-r', "--receiver"):
-            receiver = opt
+            receiver = arg
     if sender is not None and password is not None and receiver is not None:
         kwargs = {'sender': sender,
                   'password': password,
@@ -42,7 +42,6 @@ def scrape_delta_jobs(args):
     """ scrape delta jobs in the Atlanta area and email the results """
     today = date.today()
     today = today.strftime("%m/%d/%Y")
-    print args
     kwargs = parse_args(args)
 
     if kwargs is None:
@@ -54,15 +53,12 @@ def scrape_delta_jobs(args):
     try:
         link = browser.find_element_by_link_text("Search All Jobs")
         actionChains.move_to_element(link).click(link).perform()
-        print "getting page..."
         time.sleep(3)
-
         html = browser.page_source
         soup = BeautifulSoup(html)
         table = soup.find('table')
         jobs_link = table.findAll('a')[-1]['href']
         browser.execute_script(jobs_link)
-        print "getting page..."
         time.sleep(3)
         html = browser.page_source
         soup = BeautifulSoup(html)
@@ -74,6 +70,7 @@ def scrape_delta_jobs(args):
         for row in rows:
             try:
                 location = row.find('td', {'class': 'column-3'}).text
+                # modify this line to adjust location
                 if 'GA-Atlanta-ATG' in location:
                     date_posted = row.find('td', {'class': 'column-5'}).text
                     department = row.find('td', {'class': 'column-4'}).text
@@ -95,8 +92,7 @@ def scrape_delta_jobs(args):
         sentence = ""
         for title in formatted_titles:
             sentence = sentence + \
-                " New Job Posting for Postion: {}".format(title) + " \n"
-        # receivers = ['ngmejias@gmail.com']
+                " New Job Posting for Postion: {} \n".format(title)
         sender = kwargs['sender']
         receivers = kwargs['recipient']
 
@@ -107,11 +103,8 @@ def scrape_delta_jobs(args):
         {}
 
         {}
-        """.format(semder, receivers, today, base_url, sentence)
+        """.format(sender, receivers, today, base_url, sentence)
         if len(sentence) > 0:
-            print sender
-            print kwargs['password']
-            print receivers
             server = smtplib.SMTP('smtp.gmail.com:587')
             server.ehlo()
             server.starttls()
